@@ -12,13 +12,17 @@ def getBuildList() {
 }
 
 def archiveTestBinaries() {
-	sh "tar -zcf test-binaries.tar.gz $WORKSPACE/openjdk-tests $WORKSPACE/jvmtest $WORKSPACE/openjdkbinary"
+	dir("$WORKSPACE") {
+		sh "tar -zcf test-binaries.tar.gz ./openjdk-tests ./jvmtest ./openjdkbinary"
+	}
 	archiveArtifacts artifacts: '**/test-binaries.tar.gz', fingerprint: true, allowEmptyArchive: false
 }
 
 def stageTestBinaries() {
 	sh "wget -q --no-check-certificate --header 'Cookie: allow-download=1' ${env.BUILD_URL}artifact/test-binaries.tar.gz " 
 	sh "tar -xzf test-binaries.tar.gz"
+	echo pwd()
+	sh "ls"
 }
 
 def setupEnv() {
@@ -38,7 +42,7 @@ def setupEnv() {
 		} else if ( JAVA_VERSION == "SE100" ) {
 			env.JCK_VERSION = "jck10"
 		}
-		env.JCK_ROOT = "$WORKSPACE/../jck_root/"
+		env.JCK_ROOT = "$WORKSPACE/../jck_root"
 		echo "env.JCK_ROOT is: ${env.JCK_ROOT}, env.JCK_VERSION is: ${env.JCK_VERSION}"
 		if( params.JCK_GIT_REPO ) {
 			env.JCK_GIT_REPO = params.JCK_GIT_REPO
@@ -67,7 +71,6 @@ def setupParallelEnv() {
 		timestamps{
 			cleanWs()
 			setupEnv()
-			sh 'ls'
 		}
 	}
 }
@@ -162,12 +165,8 @@ def post() {
 					archiveArtifacts artifacts: '**/openjdk-systemtest-results.tar.gz', fingerprint: true, allowEmptyArchive: true
 				}
 				if (env.BUILD_LIST == 'jck') {
-					sh 'tar -zcf jck-test-results.tar.gz $WORKSPACE/openjdk-tests/TestConfig/test_output_*'
-					archiveArtifacts artifacts: '**/jck-test-results.tar.gz', fingerprint: true, allowEmptyArchive: true
-					dir("$WORKSPACE/../jck_root") {
-						sh "ls"
-						deleteDir()
-					}
+					sh "tar -zcf jck-test-results$TEST_TARGET.tar.gz $WORKSPACE/openjdk-tests/TestConfig/test_output_*"
+					archiveArtifacts artifacts: '**/jck-test-results$TEST_TARGET.tar.gz', fingerprint: true, allowEmptyArchive: true
 				}
 			}
 			cleanWs cleanWhenFailure: false
@@ -197,20 +196,25 @@ def testBuild() {
 				def testSubDir = testSubDirs[i].trim();
 				parallel_tests[testSubDir] = {
 					node ("$LABEL") {
-						stageTestBinaries()
+						env.TEST_TARGET = "_$testSubDir"
 						setupParallelEnv()
-						buildTest()
+						stageTestBinaries()
+						if( build_list == "jck") {
+							buildTest()
+						}
 						runTest("$build_list/$testSubDir")
 						post()
 					}
 				}
 			}
 			parallel parallel_tests
+			cleanWs()
 		} else {
 			echo "running test in default mode"
 			runTest("$build_list")
 			post()
 		}
+		
 	}
 }
 return this

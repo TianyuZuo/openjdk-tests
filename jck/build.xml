@@ -64,26 +64,15 @@
 		<propertyregex property="platform_short_name" defaultValue="${PLATFORM}" input="${PLATFORM}" regexp="([^\.]*)_cr.*$$" select="\1" casesensitive="false" />
 		<echo message="jck_short_version is ${jck_short_version}" />
 		<echo message="platform_short_name is ${platform_short_name}" />
-		<if>
-			<not>
-				<available file="${env.JCK_ROOT}/${env.JCK_VERSION}/natives/${platform_short_name}" type="dir" />
-			</not>
-			<!-- jck natives doesn't exist, compile them -->
-			<then>
-				<exec executable="make" failonerror="true">
-					<arg value="-f" />
-					<arg value="${SYSTEMTEST_ROOT}/openjdk-systemtest/openjdk.test.jck/src/native/makefile" />
-					<arg value="PLATFORM=${platform_short_name}" />
-					<arg value="SRCDIR=${env.JCK_ROOT}/${env.JCK_VERSION}/JCK-runtime-${jck_short_version}" />
-					<arg value="OUTDIR=${env.JCK_ROOT}/${env.JCK_VERSION}/natives" />
-					<arg value="JAVA_HOME=${JDK_HOME}" />
-					<arg value="build" />
-				</exec>
-			</then>
-			<else>
-				<echo message="${env.JCK_ROOT}/${env.JCK_VERSION}/natives/${platform_short_name} exists" />
-			</else>
-		</if>
+		<exec executable="make" failonerror="true">
+			<arg value="-f" />
+			<arg value="${SYSTEMTEST_ROOT}/openjdk-systemtest/openjdk.test.jck/src/native/makefile" />
+			<arg value="PLATFORM=${platform_short_name}" />
+			<arg value="SRCDIR=${env.JCK_ROOT}/${env.JCK_VERSION}/JCK-runtime-${jck_short_version}" />
+			<arg value="OUTDIR=${env.JCK_ROOT}/${env.JCK_VERSION}/natives" />
+			<arg value="JAVA_HOME=${JDK_HOME}" />
+			<arg value="build" />
+		</exec>
 	</target>
 
 	<target name="init">
