@@ -152,7 +152,7 @@ def runTest(subDir) {
 	}
 }
 
-def post() {
+def post(test_target) {
 	stage('Post') {
 		timestamps{
 			step([$class: "TapPublisher", testResults: "**/*.tap"])
@@ -165,7 +165,7 @@ def post() {
 					archiveArtifacts artifacts: '**/openjdk-systemtest-results.tar.gz', fingerprint: true, allowEmptyArchive: true
 				}
 				if (env.BUILD_LIST == 'jck') {
-					sh "tar -zcf jck-test-results$TEST_TARGET.tar.gz $WORKSPACE/openjdk-tests/TestConfig/test_output_*"
+					sh "tar -zcf $test_target-test-results.tar.gz $WORKSPACE/openjdk-tests/TestConfig/test_output_*"
 					archiveArtifacts artifacts: '**/jck-test-results$TEST_TARGET.tar.gz', fingerprint: true, allowEmptyArchive: true
 				}
 			}
@@ -177,43 +177,17 @@ def post() {
 
 def testBuild() {
 	timeout(time: 6, unit: 'HOURS') {
-		// prepare environment and compile test projects
-		setup()
-		buildTest()
-		def build_list = getBuildList()
-		if( params.IS_PARALLEL ){
-			// archive compiled test binaries for parallel jobs
-			archiveTestBinaries()
-			def testSubDirs = []
-			def testSubDirSize = 0
-			dir("$WORKSPACE/openjdk-tests/$build_list") {
-				testSubDirs = sh(returnStdout: true, script: "ls -d */").trim().split()
-				testSubDirSize = testSubDirs.size()
-			}
-			echo "testSubDirSize is $testSubDirSize, testSubDirs is $testSubDirs, running test in parallel mode"
-			def parallel_tests = [:]
-			for (int i = 0; i < testSubDirSize; i++) {
-				def testSubDir = testSubDirs[i].trim();
-				parallel_tests[testSubDir] = {
-					node ("$LABEL") {
-						env.TEST_TARGET = "_$testSubDir"
-						setupParallelEnv()
-						stageTestBinaries()
-						if( build_list == "jck") {
-							buildTest()
-						}
-						runTest("$build_list/$testSubDir")
-						post()
-					}
+		if( params.JCK_GIT_REPO ) {
+				sshagent (credentials: ["$params.SSH_AGENT_CREDENTIAL"]) {
+					echo "I am in sshagent"
+				}
+			} else {
+				echo "I am not in sshagent"
+				
+				sshagent (credentials: ["$params.SSH_AGENT_CREDENTIAL"]) {
+					echo "I am in sshagent"
 				}
 			}
-			parallel parallel_tests
-			cleanWs()
-		} else {
-			echo "running test in default mode"
-			runTest("$build_list")
-			post()
-		}
 		
 	}
 }
