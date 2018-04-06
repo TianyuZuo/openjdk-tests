@@ -15,7 +15,7 @@
 <playlist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../TestConfig/playlist.xsd">
 	<include>../jck.mk</include>
 	<test>
-		<testCaseName>jck-runtime-custom31</testCaseName>
+		<testCaseName>jck-runtime-custom21</testCaseName>
 		<variations>
 			<variation>NoOptions</variation>
 		</variations>
