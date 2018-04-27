@@ -140,6 +140,7 @@ def runTest(subDir) {
 						returnStdout: true
 					).trim()
 					env.DISPLAY = "${DISPLAY}"
+					env.JCK_TEST_TARGET = params.JCK_TEST_SUBSET
 					echo "env.DISPLAY is ${env.DISPLAY}"
 					echo 'Running tests...'
 					sh "$WORKSPACE/openjdk-tests/maketest.sh $WORKSPACE/openjdk-tests/${subDir} _$TARGET"
